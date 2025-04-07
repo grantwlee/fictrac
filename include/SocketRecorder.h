@@ -35,7 +35,7 @@ private:
     std::string _host;
     int _port;
 
-    boost::asio::io_service _io_service;
+    boost::asio::io_context _io_service;
     boost::asio::ip::udp::socket _socket;
     boost::asio::ip::udp::endpoint _endpoint;
 };

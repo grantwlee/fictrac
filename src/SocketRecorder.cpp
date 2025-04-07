@@ -56,7 +56,7 @@ bool SocketRecorder::openRecord(std::string host_port)
     _host = host_port.substr(0, pos);
     _port = stoi(host_port.substr(pos + 1));
 
-    _endpoint = udp::endpoint(boost::asio::ip::address::from_string(_host), _port);
+    _endpoint = udp::endpoint(boost::asio::ip::make_address(_host), _port);
 
     LOG("Opening UDP connection to %s:%d", _host.c_str(), _port);
 

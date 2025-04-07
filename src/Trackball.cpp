@@ -1437,7 +1437,7 @@ void Trackball::drawCanvas(shared_ptr<DrawData> data)
 
     /// Display
     cv::imshow("FicTrac-debug", canvas);
-    uint16_t key = cv::waitKey(1);
+    uint16_t key = cv::waitKey(1); //changed from 1 to 0
     if (key == 0x1B) {  // esc
         LOG("Exiting");
         terminate();
