@@ -84,16 +84,17 @@ These instructions have been tested for Windows 10 (22H2).
 
 1. Download and install [MSYS2](https://www.msys2.org/)
 2. Download and install [Cmake](https://cmake.org/download/) (Windows x64 installer)
-3. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and extract the repository)
+3. Download [Qt] (https://www.qt.io/download-qt-installer-oss) via online installer and add to environment variables. Find path to Qt ex. C:\Qt\6.x.x\mingw_64 and add the bin, lib, and include directories to environment variables. Restart after adding to environment variables. 
+4. Clone the FicTrac repository into a new folder named `fictrac` (if you do not have Git installed, you can download and install for Windows 64-bit from [here](https://git-scm.com/download/win) or you can simply manually download and extract the repository)
 ```
 git clone https://github.com/rjdmoore/fictrac.git
 ```
-4. In a Powershell terminal, navigate to the `fictrac` folder and run the install script to install dependencies and build FicTrac.
+5. In a Powershell terminal, navigate to the `fictrac` folder and run the install script to install dependencies and build FicTrac.
 ```
 cd fictrac
 ./install_windows.ps1
 ```
-During installation, the script will prompt you for the MSYS2 installation path and then launch a MSYS2 terminal. The FicTrac dependencies should be installed here using the `pacman` utility. The install script will display a command which you can copy to the MSYS terminal to install the dependencies. Once the dependencies are installed, you must close the MSYS window to continue the FicTrac installation.
+During installation, the script will prompt you for the MSYS2 installation path (default is C:\msys64) and then launch a MSYS2 terminal. The FicTrac dependencies should be installed here using the `pacman` utility. The install script will display a command which you can copy to the MSYS terminal to install the dependencies. Once the dependencies are installed, you must close the MSYS window to continue the FicTrac installation.
 
 After installation, you may need to close and re-open your Powershell terminal in order to run FicTrac.
 
