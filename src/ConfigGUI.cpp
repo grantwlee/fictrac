@@ -29,6 +29,10 @@
 #include <iostream> // getline, stoi
 #include <cstdio>   // getchar
 #include <exception>
+#include <algorithm>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 using cv::Mat;
 using cv::Point2d;
@@ -41,7 +45,7 @@ using std::string;
 ///
 const int       ZOOM_DIM    = 600;
 const double    ZOOM_SCL    = 1.0 / 10.0;
-const int       MAX_DISP_DIM    = -1;
+const double    DISP_MARGIN = 0.9;
 
 const int NCOLOURS = 6;
 cv::Scalar COLOURS[NCOLOURS] = {
@@ -52,6 +56,23 @@ cv::Scalar COLOURS[NCOLOURS] = {
     Scalar(0,   255, 255),
     Scalar(255, 0,   255)
 };
+
+///
+/// Return the available on-screen work area for fitting UI windows.
+///
+cv::Size getDisplayWorkArea()
+{
+#ifdef _WIN32
+    RECT work_area;
+    if (SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0)) {
+        return cv::Size(
+            static_cast<int>(std::max<LONG>(work_area.right - work_area.left, 0L)),
+            static_cast<int>(std::max<LONG>(work_area.bottom - work_area.top, 0L))
+        );
+    }
+#endif
+    return cv::Size();
+}
 
 ///
 /// Collect mouse events from config GUI window.
@@ -196,9 +217,21 @@ ConfigGui::ConfigGui(string config_fn, string src_override)
     _w = _source->getWidth();
     _h = _source->getHeight();
     _disp_scl = -1;
-    if ((MAX_DISP_DIM > 0) && (std::max(_w,_h) > MAX_DISP_DIM)) {
-        _disp_scl = MAX_DISP_DIM / static_cast<float>(std::max(_w,_h));
+    cv::Size work_area = getDisplayWorkArea();
+    if ((work_area.width > 0) && (work_area.height > 0)) {
+        double max_disp_w = work_area.width * DISP_MARGIN;
+        double max_disp_h = work_area.height * DISP_MARGIN;
+        double disp_scl = std::min(max_disp_w / static_cast<double>(_w), max_disp_h / static_cast<double>(_h));
+        if (disp_scl < 1.0) {
+            _disp_scl = static_cast<float>(disp_scl);
+        }
+    }
+    if (_disp_scl > 0) {
         _input_data.ptScl = 1.0 / _disp_scl;
+        LOG("Scaling config display from %dx%d to %dx%d (work area %dx%d).",
+            _w, _h,
+            static_cast<int>(_w * _disp_scl + 0.5f), static_cast<int>(_h * _disp_scl + 0.5f),
+            work_area.width, work_area.height);
     }
 
     double vfov = 0;
@@ -399,7 +432,7 @@ bool ConfigGui::run()
     if (!is_open()) { return false; }
 
     /// Interactive window.
-    cv::namedWindow("configGUI", cv::WINDOW_AUTOSIZE);
+    cv::namedWindow("configGUI", cv::WINDOW_NORMAL | cv::WINDOW_KEEPRATIO);
     cv::setMouseCallback("configGUI", onMouseEvent, &_input_data);
 
     /// If reconfiguring, then delete pre-computed values.
