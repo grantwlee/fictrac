@@ -29,6 +29,7 @@
 #include <iostream> // getline, stoi
 #include <cstdio>   // getchar
 #include <exception>
+#include <algorithm>
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -65,8 +66,8 @@ cv::Size getDisplayWorkArea()
     RECT work_area;
     if (SystemParametersInfo(SPI_GETWORKAREA, 0, &work_area, 0)) {
         return cv::Size(
-            std::max(work_area.right - work_area.left, 0),
-            std::max(work_area.bottom - work_area.top, 0)
+            static_cast<int>(std::max<LONG>(work_area.right - work_area.left, 0L)),
+            static_cast<int>(std::max<LONG>(work_area.bottom - work_area.top, 0L))
         );
     }
 #endif
