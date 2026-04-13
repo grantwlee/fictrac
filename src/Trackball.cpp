@@ -59,6 +59,7 @@ const int COM_BAUD_DEFAULT = 115200;
 const bool DO_DISPLAY_DEFAULT = true;
 const bool SAVE_RAW_DEFAULT = false;
 const bool SAVE_DEBUG_DEFAULT = false;
+const bool PLOT_HTML_DEFAULT = false;
 
 /// OpenCV codecs for video writing
 const vector<vector<std::string>> CODECS = {
@@ -92,16 +93,34 @@ bool intersectSphere(const double r, const double camVec[3], double sphereVec[3]
 /// 
 ///
 Trackball::Trackball(string cfg_fn, string src_override)
-    : _init(false), _reset(true), _clean_map(true), _active(true), _kill(false), _do_reset(false)
+    : _plot_html(false), _plot_radius_cm(-1), _had_error(false), _init(false), _reset(true), _clean_map(true), _active(true), _kill(false), _do_reset(false)
 {
+    auto fail_init = [this]() {
+        _had_error = true;
+        _active = false;
+    };
+
     /// Save execTime for outptut file naming.
     string exec_time = execTime();
 
     /// Load and parse config file.
     if (_cfg.read(cfg_fn) <= 0) {
         LOG_ERR("Error parsing config file (%s)!", cfg_fn.c_str());
-        _active = false;
+        fail_init();
         return;
+    }
+
+    _plot_html = PLOT_HTML_DEFAULT;
+    if (!_cfg.getBool("plot_html", _plot_html)) {
+        LOG_WRN("Warning! Using default value for plot_html (%d).", _plot_html);
+        _cfg.add("plot_html", _plot_html ? "y" : "n");
+    }
+    if (_plot_html) {
+        if (!_cfg.getDbl("plot_radius_cm", _plot_radius_cm) || (_plot_radius_cm <= 0)) {
+            LOG_ERR("Error! plot_radius_cm must be specified and greater than zero when plot_html is enabled.");
+            fail_init();
+            return;
+        }
     }
 
     /// Open frame source and set fps.
@@ -133,7 +152,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
 #endif // PGR/BASLER
     if (!source->isOpen()) {
         LOG_ERR("Error! Could not open input frame source (%s)!", src_fn.c_str());
-        _active = false;
+        fail_init();
         return;
     }
     double src_fps = -1;
@@ -159,7 +178,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
     double vfov = -1;
     if (!_cfg.getDbl("vfov", vfov) || (vfov <= 0)) {
         LOG_ERR("Error! Camera vertical FoV parameter specified in the config file (vfov) is invalid!");
-        _active = false;
+        fail_init();
         return;
     }
     bool fisheye = false;
@@ -240,7 +259,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
         }
         else {
             LOG_ERR("Error! Sphere ROI configuration specified in config file (roi_circ, roi_c, roi_r) is invalid!");
-            _active = false;
+            fail_init();
             return;
         }
     }
@@ -278,12 +297,12 @@ Trackball::Trackball(string cfg_fn, string src_override)
             }
             else {
                 LOG_ERR("Error! Camera-to-lab coordinate tranformation specified in config file (c2a_r) is invalid!");
-                _active = false;
+                fail_init();
                 return;
             }
         } else {
             LOG_ERR("Error! Camera-to-lab coordinate tranformation specified in config file (c2a_r) is invalid!");
-            _active = false;
+            fail_init();
             return;
         }
     }
@@ -314,7 +333,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
             _sphere_template = cv::imread(sphere_template_fn, 0);
             if ((_sphere_template.cols != _map_w) || (_sphere_template.rows != _map_h)) {
                 LOG_ERR("Error! Sphere map template specified in the config file (sphere_map_fn) is invalid (%dx%d)!", _sphere_template.cols, _sphere_template.rows);
-                _active = false;
+                fail_init();
                 return;
             }
 
@@ -396,11 +415,11 @@ Trackball::Trackball(string cfg_fn, string src_override)
         _roi_mask, _p1s_lut);
 
     /// Output.
-    string data_fn = _base_fn + "-" + exec_time + ".dat";
-    _data_log = make_unique<Recorder>(RecorderInterface::RecordType::FILE, data_fn);
+    _data_fn = _base_fn + "-" + exec_time + ".dat";
+    _data_log = make_unique<Recorder>(RecorderInterface::RecordType::FILE, _data_fn);
     if (!_data_log->is_active()) {
-        LOG_ERR("Error! Unable to open output data log file (%s).", data_fn.c_str());
-        _active = false;
+        LOG_ERR("Error! Unable to open output data log file (%s).", _data_fn.c_str());
+        fail_init();
         return;
     }
 
@@ -416,7 +435,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
         _data_sock = make_unique<Recorder>(RecorderInterface::RecordType::SOCK, sock_host + ":" + std::to_string(sock_port));
         if (!_data_sock->is_active()) {
             LOG_ERR("Error! Unable to open output data socket (%s:%d).", sock_host.c_str() ,sock_port);
-            _active = false;
+            fail_init();
             return;
         }
         _do_sock_output = true;
@@ -434,7 +453,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
         _data_com = make_unique<Recorder>(RecorderInterface::RecordType::COM, com_port + "@" + std::to_string(com_baud));
         if (!_data_com->is_active()) {
             LOG_ERR("Error! Unable to open output data com port (%s@%d).", com_port.c_str(), com_baud);
-            _active = false;
+            fail_init();
             return;
         }
         _do_com_output = true;
@@ -501,7 +520,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
             _raw_vid.open(vid_fn, fourcc, fps, cv::Size(source->getWidth(), source->getHeight()));
             if (!_raw_vid.isOpened()) {
                 LOG_ERR("Error! Unable to open raw output video (%s).", vid_fn.c_str());
-                _active = false;
+                fail_init();
                 return;
             }
         }
@@ -517,7 +536,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
             _debug_vid.open(vid_fn, fourcc, fps, cv::Size(4 * DRAW_CELL_DIM, 3 * DRAW_CELL_DIM));
             if (!_debug_vid.isOpened()) {
                 LOG_ERR("Error! Unable to open debug output video (%s).", vid_fn.c_str());
-                _active = false;
+                fail_init();
                 return;
             }
         }
@@ -527,7 +546,7 @@ Trackball::Trackball(string cfg_fn, string src_override)
         _vid_frames = make_unique<Recorder>(RecorderInterface::RecordType::FILE, fn);
         if (!_vid_frames->is_active()) {
             LOG_ERR("Error! Unable to open output video frame number log file (%s).", fn.c_str());
-            _active = false;
+            fail_init();
             return;
         }
     }

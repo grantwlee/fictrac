@@ -166,6 +166,12 @@ target_link_libraries(configGui fictrac_core)
 add_dependencies(configGui fictrac_core)
 target_link_libraries(fictrac fictrac_core)
 add_dependencies(fictrac fictrac_core)
+add_custom_command(
+    TARGET fictrac POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${PROJECT_SOURCE_DIR}/FictracPlotter.py"
+        "$<TARGET_FILE_DIR:fictrac>/FictracPlotter.py"
+)
 
 # if(WIN32)
 	# set_target_properties(configGui PROPERTIES LINK_FLAGS /LTCG)

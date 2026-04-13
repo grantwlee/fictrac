@@ -95,8 +95,12 @@ public:
     ~Trackball();
 
     bool isActive() { return _active; }
+    bool hadError() const { return _had_error; }
     void terminate() { _kill = true; }
     std::shared_ptr<Trackball::DATA> getState();
+    std::string getDataLogPath() const { return _data_fn; }
+    bool shouldPlotHtml() const { return _plot_html; }
+    double getPlotRadiusCm() const { return _plot_radius_cm; }
     void dumpStats();
     bool writeTemplate(std::string fn = "");
 
@@ -174,11 +178,15 @@ private:
 
     /// Data i/o.
     std::string _base_fn;
+    std::string _data_fn;
+    bool _plot_html;
+    double _plot_radius_cm;
     std::unique_ptr<FrameGrabber> _frameGrabber;
     bool _do_sock_output, _do_com_output;
     std::unique_ptr<Recorder> _data_log, _data_sock, _data_com, _vid_frames;
 
     /// Thread stuff.
+    bool _had_error;
     std::atomic_bool _active, _kill, _do_reset;
     std::unique_ptr<std::thread> _thread;
 };
