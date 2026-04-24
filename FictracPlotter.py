@@ -2,8 +2,10 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from tkinter import filedialog, Tk
+from tkinter import filedialog, simpledialog, Tk
 from datetime import datetime
+
+DEFAULT_TRACKBALL_RADIUS_CM = 5.0
 
 def fileManagement():
     #ask which file to upload and what to save output as
@@ -15,13 +17,27 @@ def fileManagement():
                                        filetypes=[("dat files","*.dat"), 
                                                   ("csv files", "*.csv"), 
                                                   ("all files", "*.*")])
+    if not fname:
+        root.destroy()
+        return (None, None, None)
     
     filepath = filedialog.asksaveasfilename(title='Save File',
                                             defaultextension= '.html',
                                             initialfile = defaultFname)
+    if not filepath:
+        root.destroy()
+        return (None, None, None)
+
+    radiuscm = simpledialog.askfloat(
+        title="Trackball Size",
+        prompt="Enter the trackball radius in cm:",
+        initialvalue=DEFAULT_TRACKBALL_RADIUS_CM,
+        minvalue=0.01,
+        parent=root,
+    )
     
     root.destroy() 
-    return(fname, filepath)
+    return(fname, filepath, radiuscm)
     
 def processData(fname, radiuscm):
 
@@ -239,7 +255,7 @@ def makegraph(df, filepath, avgvel, towards, away, total, finalAngle, radiuscm):
     )
 
     px_graph.add_annotation(
-        text=f"Trackball size: {radiuscm:.2f} cm",
+        text=f"Trackball radius: {radiuscm:.2f} cm",
         xref="paper", yref="paper",
         x=1.04, y=0, 
         showarrow=False,
@@ -295,13 +311,17 @@ def makegraph(df, filepath, avgvel, towards, away, total, finalAngle, radiuscm):
     px_graph.write_html(filepath)
 
 def main():
-    fname, filepath = fileManagement()
-    #radiuscm = radius of trackball, change this number to match your trackball
-    radiuscm = 9.5
-    df, avgvel, towards, away, total, finalAngle = processData(fname, radiuscm)
+    fname, filepath, radiuscm = fileManagement()
+    if not fname or not filepath or radiuscm is None:
+        return
+
+    processed = processData(fname, radiuscm)
+    if processed is None:
+        return
+
+    df, avgvel, towards, away, total, finalAngle = processed
     makegraph(df, filepath, avgvel, towards, away, total, finalAngle, radiuscm)
 
 if __name__ == "__main__":
     main()
-
 

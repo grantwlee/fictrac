@@ -79,7 +79,7 @@ These instructions will install Ubuntu within the Windows Subsystem for Linux (W
 </details>
 
 <details>
-    <summary>Windows 10</summary>
+    <summary>Windows 10 (does not work as of April, 2026)</summary>
 These instructions have been tested for Windows 10 (22H2).
 
 1. Download and install [MSYS2](https://www.msys2.org/)
@@ -101,7 +101,7 @@ After installation, you may need to close and re-open your Powershell terminal i
 </details>
 
 <details>
-    <summary>Alternate (old) installation via Vcpkg for Windows/Linux</summary>
+    <summary>Alternate (old) installation via Vcpkg for Windows/Linux (Use this method - April 2026)</summary>
 These instructions have been tested for Windows 10, Ubuntu 18.04, and Ubuntu 20.04.
 
 1. Download and install required build tools and dependencies:
@@ -114,19 +114,19 @@ These instructions have been tested for Windows 10, Ubuntu 18.04, and Ubuntu 20.
         sudo apt-get install gcc g++ git cmake curl unzip tar yasm pkg-config libgtk2.0-dev libavformat-dev libavcodec-dev libavresample-dev libswscale-dev libopencv-dev
         ```
     3. (Windows and Linux) Clone or download the [Vcpkg](https://github.com/Microsoft/vcpkg) repository and then follow the guide to install (make sure to perform the bootstrap and integration steps).
-    4. Using Vcpkg, install remaining dependencies:
+    4. Using Vcpkg (navigate to the vcpkg directory using powershell/terminal), install remaining dependencies:
 ```
 [Windows] .\vcpkg install opencv[ffmpeg]:x64-windows nlopt:x64-windows boost-asio:x64-windows ffmpeg[x264]:x64-windows
 [Linux] ./vcpkg install nlopt:x64-linux boost-asio:x64-linux
 ```
-2. Clone or download the FicTrac repository, then navigate to that folder, open a terminal, and create a build directory:
+2. Using terminal/powershell, navigate to where you would like the Fictrac project to be located and clone or download the FicTrac repository, then navigate to that folder, open a terminal, and create a build directory (Must have git installed):
 ```
 git clone https://github.com/rjdmoore/fictrac.git
 cd fictrac
 mkdir build
 cd build
 ```
-3. Run Cmake to prepare the necessary build files for FicTrac. Here, we will need to provide the path to the Cmake toolchain file that was installed by Vcpkg (this path is printed to terminal when you run the Vcpkg system-wide integration step).
+3. Inside your new build directory, run Cmake to prepare the necessary build files for FicTrac. Here, we will need to provide the path to the Cmake toolchain file that was installed by Vcpkg (this path is printed to terminal when you run the Vcpkg system-wide integration step).
 ```
 [Windows] cmake -A x64 -D CMAKE_TOOLCHAIN_FILE=C:\path\to\vcpkg\scripts\buildsystems\vcpkg.cmake ..
 [Linux] cmake -D CMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake ..
@@ -201,7 +201,7 @@ There are two necessary steps to configure FicTrac prior to running the program:
 
 A more [detailed guide](doc/requirements.md) on how to configure FicTrac for your setup and explanations of all the [configuration parameters](doc/params.md) and [coordinate frames](doc/coordinate_frames.md) can be found in the `doc` directory.
 
-### Running FicTrac
+### Running FicTrac Sample
 
 To configure FicTrac for the provided sample data, simply open a terminal in the FicTrac project folder and type:
 ```
@@ -211,17 +211,34 @@ cd sample
 ```
 The sample config file `config.txt` is already configured for the sample data, but you can step through the configuration process to check that everything looks ok.
 
-Then, to run FicTrac, type:
+Then, to run FicTrac on the sample configuration/video, type:
 ```
 [Windows] ..\bin\Release\fictrac.exe config.txt
 [Linux] sudo ../bin/fictrac config.txt
 ```
+### Running Fictrac
+
+To run Fictrac and the config tool on user data:
+1. navigate to `fictrac/bin/` or wherever your executables (.exe) are located
+2. create a new config.txt or copy over the sample into this directory and modify desired values. See [configuration parameters](doc/params.md) for config values. 
+3. run `config.exe` either by double clicking on the icon (file explorer) or running the command:
+```
+configGui.exe config.txt
+```
+4. Follow the instructions to set configuration values then exit the configuration GUI.
+5. run `fictrac.exe` either by double clicking on the icon (file explorer) or running the command:
+```
+fictrac.exe config.txt
+```
+6. If using live input, press esc to exit the program when done. 
 
 FicTrac will usually generate two output files:
 1. Log file (*.log) - containing debugging information about FicTrac's execution.
 2. Data file (*.dat) - containing output data. See [data_header](doc/data_header.txt) for information about output data and [coordinate frames](doc/coordinate_frames.md) for details of how the various output data relate to each other.
 
 The output data file can be used for offline processing. To use FicTrac within a closed-loop setup (to provide real-time feedback for stimuli), you should configure FicTrac to output data via a socket (IP address/port) in real-time. To do this, just set `sock_port` to a valid port number in the config file. There is an example Python script for receiving data via sockets in the `scripts` directory.
+
+To process the data file navigate to the 
 
 **Note:** For Windows installations, if the `fictrac` command returns immediately without printing anything to the terminal, try closing and reopening the terminal.
 
