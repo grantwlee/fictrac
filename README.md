@@ -238,7 +238,9 @@ FicTrac will usually generate two output files:
 
 The output data file can be used for offline processing. To use FicTrac within a closed-loop setup (to provide real-time feedback for stimuli), you should configure FicTrac to output data via a socket (IP address/port) in real-time. To do this, just set `sock_port` to a valid port number in the config file. There is an example Python script for receiving data via sockets in the `scripts` directory.
 
-To process the data file navigate to the 
+### Processing .dat file
+
+To process the data file, extract the files from the FictracPlotter.zip (runs on windows only, on other operating systems you can run the FictracPlotter.py script directly or rebuild for your system) folder and then navigate to the resulting folder. in that folder, double click on the FictracPlotter.exe file. This script will then prompt you to select the .dat file you want to process, name the resulting file and choose where to place it, and enter in the radius of the trackball you used. The resulting html file will then be placed in your file explorer and you will be able to open and see your results. 
 
 **Note:** For Windows installations, if the `fictrac` command returns immediately without printing anything to the terminal, try closing and reopening the terminal.
 
